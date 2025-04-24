@@ -29,21 +29,21 @@ def I : α → α :=
   fun a ↦ a
 
 def K : α → β → α :=
-  fun a b ↦ a
+  fun a _ ↦ a
 
 def C : (α → β → γ) → β → α → γ :=
-  sorry
+  fun ab b a ↦ ab a b
 
 def projFst : α → α → α :=
-  sorry
+  fun a _ ↦ a
 
 /- Give a different answer than for `projFst`. -/
 
 def projSnd : α → α → α :=
-  sorry
+  fun _ a ↦ a
 
 def someNonsense : (α → β → γ) → α → (α → γ) → β → γ :=
-  sorry
+  fun aby a _ b ↦ aby a b
 
 
 /- ## Question 2: Typing Derivation
@@ -54,4 +54,18 @@ bars) and `⊢` useful. -/
 
 -- write your solution in a comment here or on paper
 
+
+/-
+-- def C : (α → β → γ) → β → α → γ :=
+--   fun ab b a ↦ ab a b
+-- Π : context
+
+    —————————————————— Cst   —————————— Cst
+    Π ⊢ ab : α → β → γ       Π ⊢ a : α
+    ———————————————————————————————————— App
+                                    —————————— Cst
+                Π ⊢ ab a : β → γ    Π ⊢ b : β
+                ——————————————————————————————
+                        Π ⊢ ab a b : γ
+-/
 end LoVe
