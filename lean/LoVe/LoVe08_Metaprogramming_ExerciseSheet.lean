@@ -19,6 +19,10 @@ open Lean.TSyntax
 
 namespace LoVe
 
+macro x:ident ":" t:term " ↦ " y:term : term => do
+  `(fun $x : $t => $y)
+
+#eval (x : Nat ↦ x + 2) 2
 
 /- ## Question 1: `destruct_and` on Steroids
 
@@ -39,7 +43,14 @@ conjunctions are gone. Define your tactic as a macro. -/
 
 #check repeat'
 
--- enter your definition here
+
+macro "intro_and" : tactic =>
+  `(tactic|
+      (repeat' apply And.intro))
+
+
+-- elab "intro_and" : tactic =>
+--   intro_and
 
 theorem abcd_bd (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) :
   b ∧ d :=
@@ -59,7 +70,7 @@ theorem abcd_bd (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) :
     repeat' sorry
 
 theorem abcd_bacb (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) :
-  b ∧ (a ∧ (c ∧ b)) :=
+  b ∧ a ∧ (c ∧ b) :=
   by
     intro_and
     /- The proof state should be as follows:
@@ -112,7 +123,15 @@ Here is some pseudocode that you can follow:
 6. Return. -/
 
 partial def casesAnd : TacticM Unit :=
-  sorry
+  withMainContext
+    do
+      let lctx ← getLCtx
+      for ldecl in lctx do
+        if ! LocalDecl.isImplementationDetail ldecl then
+          let ty ← inferType ldecl.toExpr
+          if Expr.isAppOfArity ty ``And 2 then
+            cases ldecl.fvarId
+            casesAnd
 
 elab "cases_and" : tactic =>
   casesAnd
@@ -137,8 +156,16 @@ theorem abcd_bd_again (a b c d : Prop) :
 `intro_and`, before it tries to prove all the subgoals that can be discharged
 directly by `assumption`. -/
 
-macro "destro_and" : tactic =>
-  sorry
+-- macro "destro_and" : tactic =>
+--   `(tactic| (intro_and))
+
+elab "destro_and" : tactic => withMainContext do
+  evalTactic $ ←
+    `(tactic|
+        cases_and;
+          intro_and
+          <;>
+          try assumption)
 
 theorem abcd_bd_over_again (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) :
   b ∧ d :=
@@ -167,6 +194,14 @@ it works as expected also on more complicated examples. -/
 
 -- enter your examples here
 
+theorem abcd_bacb_left_assoc (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) :
+  (b ∧ a ∧ c) ∧ b :=
+  by destro_and
+
+theorem abcd_bacb_left_assoc_again (a b c d : Prop) (h : (a ∧ b ∧ c) ∧ d) :
+  (b ∧ a) ∧ c ∧ b :=
+  by destro_and
+
 
 /- ## Question 2 (**optional**): A Theorem Finder
 
@@ -183,8 +218,17 @@ Hints:
 
 * The "or" connective on `Bool` is called `||`, and equality is called `==`. -/
 
-def constInExpr (name : Name) (e : Expr) : Bool :=
-  sorry
+partial def constInExpr (name : Name) (e : Expr) : Bool :=
+  match e with
+  | Expr.const n _            => (n.toString).startsWith (name.toString)
+  | Expr.app f a              => constInExpr name f || constInExpr name a
+  | Expr.lam _ _ body _       => constInExpr name body
+  | Expr.forallE _ _ body _   => constInExpr name body
+  | Expr.letE _ _ val body _  =>
+      constInExpr name val || constInExpr name body
+  | Expr.mdata _ body         => constInExpr name body
+  | Expr.proj _ _ struct      => constInExpr name struct
+  | _                         => false
 
 /- 2.2 (**optional**). Write a function that checks whether an expression
 contains **all** constants in a list.
@@ -192,7 +236,10 @@ contains **all** constants in a list.
 Hint: You can either proceed recursively or use `List.and` and `List.map`. -/
 
 def constsInExpr (names : List Name) (e : Expr) : Bool :=
-  sorry
+  match names with
+  | []  => true
+  | n :: ns =>
+    constInExpr n e && constsInExpr ns e
 
 /- 2.3 (**optional**). Develop a tactic that uses `constsInExpr` to print the
 name of all theorems that contain all constants `names` in their statement.
@@ -201,7 +248,19 @@ This code should be similar to that of `proveDirect` in the demo file. With
 `ConstantInfo.type`, you can extract the proposition associated with a theorem. -/
 
 def findConsts (names : List Name) : TacticM Unit :=
-  sorry
+  do
+    let goal ← getMainGoal
+    setGoals [goal]
+    let env ← getEnv
+    for (thm, info) in SMap.toList (Environment.constants env) do
+      if isTheorem info && ! ConstantInfo.isUnsafe info then
+        try
+          let thmExpr ← mkConstWithFreshMVarLevels thm
+          if constsInExpr names thmExpr then
+            let thmBody := info.type
+            logInfo m!"find a possibly related theorem:{thm}\n{thmBody}"
+        catch _ =>
+          continue
 
 elab "find_consts" "(" names:ident+ ")" : tactic =>
   findConsts (Array.toList (Array.map getId names))
@@ -212,7 +271,7 @@ theorem List.a_property_of_reverse {α : Type} (xs : List α) (a : α) :
   List.reverse (List.concat xs a) = a :: List.reverse xs :=
   by
     find_consts (List.reverse)
-    find_consts (List.reverse List.concat)
+    find_consts (List.concat List.append)
     apply List.reverse_concat
 
 end LoVe
