@@ -6,7 +6,7 @@ import LoVe.Rope.Delete
 /--
 ## Main Theorem: `evalSeq_invariant`
 
-This theorem asserts that `any valid sequence of Rope operations`
+This theorem asserts that `any infinite sequence of Rope operations`
 defined in the context, preserves the legality of the rope.
 
 ## Statement:
