@@ -12,11 +12,6 @@ of the Rope structure.
 
 The theorems are as follows:
 
-* `Rope_concat_assoc` : Proves that `concat` is associative w.r.t. `toString`.
-  e.g.,
-    r1 : Rope = concat t1 (concat t2 t3)
-    r2 : Rope = concat (concat t1 t2) t2
-    then we have, t1.toString = t2.toString
 
 * `Rope_concat_string_invariant` : Shows that the string represented by the
   concatenation is exactly the concatenation of the individual strings.
@@ -29,6 +24,12 @@ The theorems are as follows:
 * `Rope_concat_length_comm` : Shows that the total length of the result is
   commutative, even though the actual Rope tree structure is not.
 
+* `Rope_concat_assoc` : Proves that `concat` is associative w.r.t. `toString`.
+  e.g.,
+    r1 : Rope = concat t1 (concat t2 t3)
+    r2 : Rope = concat (concat t1 t2) t2
+    then we have, t1.toString = t2.toString
+
 These results help ensure the correctness of rope transformations,
 and will be foundational for proving the correctness of operations
 like insertion, deletion, and balanced splitting.
@@ -37,14 +38,6 @@ like insertion, deletion, and balanced splitting.
 
 def Rope.concat (r1 r2 : Rope) : Rope :=
   Rope.node r1 (Rope.length r1) r2
-
-theorem Rope_concat_assoc (r1 r2 r3 : Rope) :
-  Rope.toString (Rope.concat (Rope.concat r1 r2) r3) =
-  Rope.toString (Rope.concat r1 (Rope.concat r2 r3)) :=
-by
-  unfold Rope.toString Rope.concat
-  simp [Rope.toString]
-  apply String.append_assoc
 
 
 theorem Rope_concat_string_invariant :
@@ -76,10 +69,18 @@ by
   exact hleg
 
 
-
 theorem Rope_concat_length_comm (r1 r2 : Rope) :
   Rope.length (Rope.concat r1 r2) = Rope.length (Rope.concat r2 r1) :=
 by
   unfold Rope.concat
   simp [Rope.length]
   apply Nat.add_comm
+
+
+theorem Rope_concat_assoc (r1 r2 r3 : Rope) :
+  Rope.toString (Rope.concat (Rope.concat r1 r2) r3) =
+  Rope.toString (Rope.concat r1 (Rope.concat r2 r3)) :=
+by
+  unfold Rope.toString Rope.concat
+  simp [Rope.toString]
+  apply String.append_assoc

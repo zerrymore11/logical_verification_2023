@@ -25,6 +25,9 @@ such as `insert`, `delete`, `concat`, and `rebalance`.
 Note that one *limitation* here is we do not include `split`
 operation, thought it also preserves the legality, which
 have been proved before.
+
+## Test cases
+We add some test cases to show the operations for Rope.
 -/
 
 inductive RopeOp : Type
@@ -88,3 +91,53 @@ by
     exact hstart
     intro rx rh'
     exact r rx (List.mem_cons_of_mem x rh')
+
+
+
+
+def t1 := Rope.leaf "12345"
+def t2 := Rope.leaf "678910"
+def t3 := Rope.leaf "123"
+def t4 := Rope.leaf "12345"
+def t5 := Rope.leaf "12"
+def t6 := Rope.leaf "123"
+
+def unbalanced :=
+  Rope.node t1 5 (
+    Rope.node t2 6 (
+      Rope.node t3 3 (
+        Rope.node t4 5 (
+          Rope.node t5 2 t6
+        )
+      )
+    )
+  )
+
+
+#eval unbalanced.isLegal
+
+#eval unbalanced.toString
+
+def rsplit := Rope.split unbalanced 5
+
+#eval (Rope.delete unbalanced 3 2)
+
+#eval unbalanced
+
+#eval rsplit.fst
+
+#eval rsplit.snd
+
+#eval rsplit.fst.toString
+
+#eval rsplit.snd.toString
+
+
+def test_rope :=
+  (Rope.node t1 5 t2)
+
+def ss := "1234567"
+#eval ss
+#eval test_rope.toString
+#eval test_rope.isLegal
+#check ss.toList[123]?

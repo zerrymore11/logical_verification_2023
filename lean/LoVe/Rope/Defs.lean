@@ -132,23 +132,3 @@ by
     rw [wlength]
     simp [Rope_length_eq_string_length l lleg]
     simp [Rope_length_eq_string_length r rleg]
-
-def r1 := Rope.leaf "12345"
-def r2 := Rope.leaf "678910"
-def r3 := Rope.leaf "123"
-def r4 := Rope.leaf "12345"
-def r5 := Rope.leaf "12"
-def r6 := Rope.leaf "123"
-
-def unbalancedRope :=
-  Rope.node r1 5 (
-    Rope.node r2 6 (
-      Rope.node r3 3 (
-        Rope.node r4 5 (
-          Rope.node r5 2 r6
-        )
-      )
-    )
-  )
-
-#eval IO.println (Rope.prettyPrintStr unbalancedRope)
